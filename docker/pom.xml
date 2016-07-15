@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.apache.jclouds.labs</groupId>
     <artifactId>jclouds-labs</artifactId>
-    <version>1.9.2</version>
+    <version>1.9.3-SNAPSHOT</version>
   </parent>
 
   <!-- TODO: when out of labs, switch to org.jclouds.provider -->
@@ -32,7 +32,6 @@
   <name>jclouds docker API</name>
   <description>ComputeService binding to the Docker API</description>
   <packaging>bundle</packaging>
-  <version>1.9.2-cloudsoft.20160630</version>
 
   <properties>
     <test.docker.api-version>1.19</test.docker.api-version>
