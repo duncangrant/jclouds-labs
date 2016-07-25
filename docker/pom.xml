@@ -41,9 +41,9 @@
     <test.jclouds.trust-all-certs>false</test.jclouds.trust-all-certs>
     <jclouds.osgi.export>org.jclouds.docker*;version="${project.version}"</jclouds.osgi.export>
     <jclouds.osgi.import>
-      org.jclouds.compute.internal;version="${jclouds.version}",
-      org.jclouds.rest.internal;version="${jclouds.version}",
-      org.jclouds*;version="${jclouds.version}",
+      org.jclouds.compute.internal,
+      org.jclouds.rest.internal,
+      org.jclouds*,
       *
     </jclouds.osgi.import>
   </properties>
