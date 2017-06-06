@@ -59,6 +59,7 @@ import org.jclouds.logging.Logger;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
 
 @Singleton
 public class CleanupResources {
@@ -70,6 +71,14 @@ public class CleanupResources {
    private final AzureComputeApi api;
    private final Predicate<URI> resourceDeleted;
    private final GroupNamingConvention.Factory namingConvention;
+
+   // Filters "deletable" resources from list e.g. virtual networks which we expect to be deleted with resource group
+   private Predicate<org.jclouds.azurecompute.arm.domain.Resource> isNotDeletable = new Predicate<org.jclouds.azurecompute.arm.domain.Resource>() {
+      @Override
+      public boolean apply(org.jclouds.azurecompute.arm.domain.Resource input) {
+         return !"Microsoft.Network/virtualNetworks".equals(input.type());
+      }
+   };
 
    @Inject
    CleanupResources(AzureComputeApi azureComputeApi, @Named(TIMEOUT_RESOURCE_DELETED) Predicate<URI> resourceDeleted,
@@ -204,11 +213,17 @@ public class CleanupResources {
 
    public boolean deleteResourceGroupIfEmpty(String group) {
       boolean deleted = false;
-      if (api.getResourceGroupApi().resources(group).isEmpty()) {
+      if (resourceGroupCanBeDeleted(group)) {
          logger.debug(">> the resource group %s is empty. Deleting...", group);
          deleted = resourceDeleted.apply(api.getResourceGroupApi().delete(group));
       }
       return deleted;
+   }
+
+   private boolean resourceGroupCanBeDeleted(String group) {
+      Iterable<org.jclouds.azurecompute.arm.domain.Resource> resources =
+              Iterables.filter(api.getResourceGroupApi().resources(group), isNotDeletable);
+      return Iterables.isEmpty(resources);
    }
 
    private Iterable<IdReference> getPublicIps(NetworkInterfaceCard nic) {

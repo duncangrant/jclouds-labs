@@ -124,4 +124,12 @@ public class AzureComputeService extends BaseComputeService {
          cleanupResources.deleteResourceGroupIfEmpty(resourceGroup);
       }
    }
+
+   @Override
+   public void destroyNode(String id) {
+      NodeMetadata nodeMetadataBeforeDelete = getNodeMetadata(id);
+      doDestroyNode(id);
+      //Node metadata is null after deletion but we still need to clean up incidental resources
+      cleanUpIncidentalResourcesOfDeadNodes(ImmutableSet.of(nodeMetadataBeforeDelete));
+   }
 }
