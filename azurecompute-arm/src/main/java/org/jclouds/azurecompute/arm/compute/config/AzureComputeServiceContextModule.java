@@ -28,6 +28,7 @@ import static org.jclouds.util.Predicates2.retry;
 import java.net.URI;
 import java.util.List;
 
+import javax.annotation.Resource;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
@@ -72,9 +73,11 @@ import org.jclouds.compute.extensions.SecurityGroupExtension;
 import org.jclouds.compute.functions.NodeAndTemplateOptionsToStatement;
 import org.jclouds.compute.functions.NodeAndTemplateOptionsToStatementWithoutPublicKey;
 import org.jclouds.compute.options.TemplateOptions;
+import org.jclouds.compute.reference.ComputeServiceConstants;
 import org.jclouds.compute.reference.ComputeServiceConstants.PollPeriod;
 import org.jclouds.compute.reference.ComputeServiceConstants.Timeouts;
 import org.jclouds.compute.strategy.CreateNodesInGroupThenAddToSet;
+import org.jclouds.logging.Logger;
 import org.jclouds.net.domain.IpPermission;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -89,6 +92,10 @@ import com.google.inject.TypeLiteral;
 
 public class AzureComputeServiceContextModule extends
       ComputeServiceAdapterContextModule<VirtualMachine, VMHardware, VMImage, Location> {
+
+   @Resource
+   @Named(ComputeServiceConstants.COMPUTE_LOGGER)
+   protected Logger logger = Logger.NULL;
 
    @Override
    protected void configure() {
@@ -154,7 +161,7 @@ public class AzureComputeServiceContextModule extends
    @Named(TIMEOUT_NODE_TERMINATED)
    protected Predicate<URI> provideNodeTerminatedPredicate(final AzureComputeApi api, final Timeouts timeouts,
          final PollPeriod pollPeriod) {
-      return retry(new ActionDonePredicate(api), timeouts.nodeTerminated, pollPeriod.pollInitialPeriod,
+      return retry(new ActionDonePredicate(api, logger), timeouts.nodeTerminated, pollPeriod.pollInitialPeriod,
             pollPeriod.pollMaxPeriod);
    }
 
@@ -170,7 +177,7 @@ public class AzureComputeServiceContextModule extends
    @Named(TIMEOUT_RESOURCE_DELETED)
    protected Predicate<URI> provideResourceDeletedPredicate(final AzureComputeApi api, final Timeouts timeouts,
          final PollPeriod pollPeriod) {
-      return retry(new ActionDonePredicate(api), timeouts.nodeTerminated, pollPeriod.pollInitialPeriod,
+      return retry(new ActionDonePredicate(api, logger), timeouts.nodeTerminated, pollPeriod.pollInitialPeriod,
             pollPeriod.pollMaxPeriod);
    }
 
@@ -212,7 +219,7 @@ public class AzureComputeServiceContextModule extends
    @Named("STORAGE")
    protected Predicate<URI> provideStorageAccountAvailablePredicate(final AzureComputeApi api,
          @Named(OPERATION_TIMEOUT) Integer operationTimeout, PollPeriod pollPeriod) {
-      return retry(new ActionDonePredicate(api), operationTimeout, pollPeriod.pollInitialPeriod,
+      return retry(new ActionDonePredicate(api, logger), operationTimeout, pollPeriod.pollInitialPeriod,
             pollPeriod.pollMaxPeriod);
    }
 
@@ -220,16 +227,43 @@ public class AzureComputeServiceContextModule extends
    static class ActionDonePredicate implements Predicate<URI> {
 
       private final AzureComputeApi api;
+      private final Logger logger;
 
-      public ActionDonePredicate(final AzureComputeApi api) {
+      public ActionDonePredicate(final AzureComputeApi api, Logger logger) {
          this.api = checkNotNull(api, "api must not be null");
+         this.logger = logger;
       }
 
       @Override
       public boolean apply(final URI uri) {
          checkNotNull(uri, "uri cannot be null");
-         return ParseJobStatus.JobStatus.DONE == api.getJobApi().jobStatus(uri)
-               || ParseJobStatus.JobStatus.NO_CONTENT == api.getJobApi().jobStatus(uri);
+         ParseJobStatus.JobStatus jobStatus = api.getJobApi().jobStatus(uri);
+         logger.debug("uri: " + uri + " status: " + jobStatus);
+         return ParseJobStatus.JobStatus.DONE == jobStatus
+               || ParseJobStatus.JobStatus.NO_CONTENT == jobStatus;
+      }
+
+   }
+
+
+   @VisibleForTesting
+   static class DJGDonePredicate implements Predicate<URI> {
+
+      private final AzureComputeApi api;
+      private final Logger logger;
+
+      public DJGDonePredicate(final AzureComputeApi api, Logger logger) {
+         this.api = checkNotNull(api, "api must not be null");
+         this.logger = logger;
+      }
+
+      @Override
+      public boolean apply(final URI uri) {
+         checkNotNull(uri, "uri cannot be null");
+         ParseJobStatus.JobStatus jobStatus = api.getJobApi().jobStatus(uri);
+         logger.debug("uri: " + uri + " status: " + jobStatus);
+         return ParseJobStatus.JobStatus.DONE == jobStatus
+                 || ParseJobStatus.JobStatus.NO_CONTENT == jobStatus;
       }
 
    }

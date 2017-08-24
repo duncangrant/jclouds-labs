@@ -16,25 +16,14 @@
  */
 package org.jclouds.azurecompute.arm.compute.strategy;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkState;
-import static com.google.common.collect.Iterables.getOnlyElement;
-import static org.jclouds.azurecompute.arm.config.AzureComputeProperties.DEFAULT_SUBNET_ADDRESS_PREFIX;
-import static org.jclouds.azurecompute.arm.config.AzureComputeProperties.DEFAULT_VNET_ADDRESS_SPACE_PREFIX;
-import static org.jclouds.azurecompute.arm.domain.IdReference.extractName;
-import static org.jclouds.azurecompute.arm.domain.IdReference.extractResourceGroup;
-import static org.jclouds.azurecompute.arm.domain.Subnet.extractVirtualNetwork;
-
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Set;
-
-import javax.annotation.Resource;
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Singleton;
-
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
+import com.google.common.cache.LoadingCache;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Multimap;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import org.jclouds.Constants;
 import org.jclouds.azurecompute.arm.AzureComputeApi;
 import org.jclouds.azurecompute.arm.compute.domain.ResourceGroupAndName;
@@ -50,7 +39,6 @@ import org.jclouds.azurecompute.arm.domain.Subnet;
 import org.jclouds.azurecompute.arm.domain.Subnet.SubnetProperties;
 import org.jclouds.azurecompute.arm.domain.VirtualNetwork.AddressSpace;
 import org.jclouds.azurecompute.arm.domain.VirtualNetwork.VirtualNetworkProperties;
-import org.jclouds.util.Passwords;
 import org.jclouds.compute.config.CustomizationResponse;
 import org.jclouds.compute.domain.NodeMetadata;
 import org.jclouds.compute.domain.Template;
@@ -63,14 +51,24 @@ import org.jclouds.compute.strategy.ListNodesStrategy;
 import org.jclouds.compute.strategy.impl.CreateNodesWithGroupEncodedIntoNameThenAddToSet;
 import org.jclouds.domain.Location;
 import org.jclouds.logging.Logger;
+import org.jclouds.util.Passwords;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.cache.LoadingCache;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Multimap;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
+import javax.annotation.Resource;
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Set;
+
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.Iterables.getOnlyElement;
+import static org.jclouds.azurecompute.arm.config.AzureComputeProperties.DEFAULT_SUBNET_ADDRESS_PREFIX;
+import static org.jclouds.azurecompute.arm.config.AzureComputeProperties.DEFAULT_VNET_ADDRESS_SPACE_PREFIX;
+import static org.jclouds.azurecompute.arm.domain.IdReference.extractName;
+import static org.jclouds.azurecompute.arm.domain.IdReference.extractResourceGroup;
+import static org.jclouds.azurecompute.arm.domain.Subnet.extractVirtualNetwork;
 
 @Singleton
 public class CreateResourcesThenCreateNodes extends CreateNodesWithGroupEncodedIntoNameThenAddToSet {
@@ -158,8 +156,8 @@ public class CreateResourcesThenCreateNodes extends CreateNodesWithGroupEncodedI
          
          logger.debug(">> network options have not been configured. Creating network %s(%s) and subnet %s(%s)", name,
                defaultVnetAddressPrefix, name, defaultSubnetAddressPrefix);
-         
-         api.getVirtualNetworkApi(options.getResourceGroup()).createOrUpdate(name, location, properties);
+
+         api.getVirtualNetworkApi(options.getResourceGroup()).createOrUpdate(name, location, ImmutableMap.of("jclouds", name), properties);
          Subnet createdSubnet = api.getSubnetApi(options.getResourceGroup(), name).get(name);
          
          options.ipOptions(IpOptions.builder().subnet(createdSubnet.id()).allocateNewPublicIp(true).build());

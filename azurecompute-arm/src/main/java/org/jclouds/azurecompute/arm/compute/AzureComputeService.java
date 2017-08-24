@@ -16,16 +16,12 @@
  */
 package org.jclouds.azurecompute.arm.compute;
 
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
-
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-
+import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
+import com.google.common.base.Supplier;
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import org.jclouds.Constants;
 import org.jclouds.azurecompute.arm.compute.domain.ResourceGroupAndName;
 import org.jclouds.azurecompute.arm.compute.strategy.CleanupResources;
@@ -55,12 +51,14 @@ import org.jclouds.domain.Credentials;
 import org.jclouds.domain.Location;
 import org.jclouds.scriptbuilder.functions.InitAdminAccess;
 
-import com.google.common.base.Optional;
-import com.google.common.base.Predicate;
-import com.google.common.base.Supplier;
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.util.concurrent.ListeningExecutorService;
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.jclouds.compute.config.ComputeServiceProperties.TIMEOUT_NODE_RUNNING;
 import static org.jclouds.compute.config.ComputeServiceProperties.TIMEOUT_NODE_SUSPENDED;
@@ -116,13 +114,14 @@ public class AzureComputeService extends BaseComputeService {
          }
       }
 
-      for (Entry<String, String> regionGroup : regionGroups.build().entries()) {
+      ImmutableMultimap<String, String> build = regionGroups.build();
+      for (Entry<String, String> regionGroup : build.entries()) {
          cleanupResources.cleanupSecurityGroupIfOrphaned(regionGroup.getKey(), regionGroup.getValue());
       }
 
-      for (String resourceGroup : resourceGroups.build()) {
-         cleanupResources.deleteResourceGroupIfEmpty(resourceGroup);
+      for (Entry<String, String> resourceGroup : build.entries()) {
+         cleanupResources.deleteResourceGroupIfEmpty(resourceGroup.getValue());
       }
    }
-   
+
 }

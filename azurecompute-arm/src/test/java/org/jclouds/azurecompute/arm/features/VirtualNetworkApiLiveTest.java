@@ -16,18 +16,18 @@
  */
 package org.jclouds.azurecompute.arm.features;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
-
-import java.util.Arrays;
-import java.util.List;
-
 import org.jclouds.azurecompute.arm.domain.VirtualNetwork;
 import org.jclouds.azurecompute.arm.internal.BaseAzureComputeApiLiveTest;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+
+import java.util.Arrays;
+import java.util.List;
+
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 
 @Test(groups = "live", singleThreaded = true)
 public class VirtualNetworkApiLiveTest extends BaseAzureComputeApiLiveTest {
@@ -55,7 +55,7 @@ public class VirtualNetworkApiLiveTest extends BaseAzureComputeApiLiveTest {
               VirtualNetwork.VirtualNetworkProperties.builder().addressSpace(
                       VirtualNetwork.AddressSpace.create(Arrays.asList(DEFAULT_VIRTUALNETWORK_ADDRESS_PREFIX))).build();
 
-      VirtualNetwork vn = api().createOrUpdate(virtualNetworkName, LOCATION, virtualNetworkProperties);
+      VirtualNetwork vn = api().createOrUpdate(virtualNetworkName, LOCATION, null, virtualNetworkProperties);
 
       assertEquals(vn.name(), virtualNetworkName);
       assertEquals(vn.location(), LOCATION);
